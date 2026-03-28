@@ -7,6 +7,7 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Apache Spark 4.0
 - PySpark
 - Google Colab
+- Databricks Community Edition
 
 ## Stages
 
@@ -43,6 +44,12 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Silver layer: deduplication, filtering, enrichment
 - Gold layer: business metrics (top products, revenue by country, avg order)
 
+### Databricks — Delta Lake
+- Delta Lake instead of Parquet
+- Time Travel (versionAsOf)
+- MERGE / Upsert operations
+- Table history with DESCRIBE HISTORY
+
 ## How to run
 1. Open any `.py` file in Google Colab
 2. Install dependencies: `!pip install pyspark -q`
@@ -53,6 +60,6 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Stages 1, 3, 4, 5: Synthetic data generated in code
 
 ## Next steps
-- [ ] Delta Lake on Databricks Community Edition
+- [x] Delta Lake on Databricks Community Edition
 - [ ] Apache Airflow orchestration
 - [ ] Full pipeline on real dataset
