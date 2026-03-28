@@ -38,6 +38,11 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Chaining joins across three tables
 - Measuring execution time improvements
 
+### Stage 5 — Lakehouse Pipeline (Bronze → Silver → Gold)
+- Bronze layer: raw data ingestion with timestamp
+- Silver layer: deduplication, filtering, enrichment
+- Gold layer: business metrics (top products, revenue by country, avg order)
+
 ## How to run
 1. Open any `.py` file in Google Colab
 2. Install dependencies: `!pip install pyspark -q`
@@ -45,9 +50,9 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 
 ## Dataset
 - Stage 2: [Online Retail Dataset](https://github.com/databricks/Spark-The-Definitive-Guide)
-- Stages 1, 3, 4: Synthetic data generated in code
+- Stages 1, 3, 4, 5: Synthetic data generated in code
 
 ## Next steps
-- [ ] Stage 5 — Full Lakehouse pipeline (Bronze → Silver → Gold)
 - [ ] Delta Lake on Databricks Community Edition
 - [ ] Apache Airflow orchestration
+- [ ] Full pipeline on real dataset
