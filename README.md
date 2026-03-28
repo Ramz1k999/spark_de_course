@@ -8,6 +8,8 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - PySpark
 - Google Colab
 - Databricks Community Edition
+- Apache Airflow 2.9.1
+- Docker
 
 ## Stages
 
@@ -50,16 +52,64 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - MERGE / Upsert operations
 - Table history with DESCRIBE HISTORY
 
+### Airflow — Orchestration
+- DAG with Bronze → Silver → Gold pipeline
+- PythonOperator for task execution
+- Daily schedule (@daily)
+- Docker deployment
+
+### Final Project — Spotify Tracks Pipeline
+- Dataset: 1.1M Spotify tracks from Kaggle
+- Bronze: raw CSV ingestion with timestamp
+- Silver: deduplication, type casting, null removal, duration in minutes
+- Gold: top 20 artists by popularity, genre stats (danceability/energy/valence), yearly trends
+- Orchestrated with Apache Airflow DAG
+
+## Project Structure
+```
+spark-de-course/
+├── stage1_basics/
+│   └── basics.py
+├── stage2_etl/
+│   └── retail_etl.py
+├── stage3_streaming/
+│   └── streaming_orders.py
+├── stage4_optimization/
+│   └── optimization.py
+├── stage5_lakehouse/
+│   └── lakehouse_pipeline.py
+└── spotify_pipeline/
+    ├── pipeline.py        # PySpark ETL
+    └── dag.py             # Airflow DAG
+```
+
 ## How to run
+
+### Stages 1–5 (Google Colab)
 1. Open any `.py` file in Google Colab
 2. Install dependencies: `!pip install pyspark -q`
 3. Run the cells in order
 
-## Dataset
+### Spotify Pipeline (local)
+1. Install dependencies: `pip install pyspark`
+2. Download dataset from Kaggle: Spotify Tracks Dataset
+3. Run: `python pipeline.py`
+
+### Airflow (Docker)
+1. Install Docker Desktop
+2. Run: `docker compose up -d`
+3. Open: http://localhost:8080 (login: airflow / airflow)
+4. Enable and trigger `spotify_pipeline` DAG
+
+## Dataset Sources
 - Stage 2: [Online Retail Dataset](https://github.com/databricks/Spark-The-Definitive-Guide)
 - Stages 1, 3, 4, 5: Synthetic data generated in code
+- Final Project: [Spotify Tracks Dataset](https://www.kaggle.com/datasets/amitanshjoshi/spotify-1million-tracks)
 
 ## Next steps
 - [x] Delta Lake on Databricks Community Edition
 - [x] Apache Airflow orchestration
-- [ ] Full pipeline on real dataset
+- [x] Full pipeline on real dataset
+- [ ] Cloud deployment (AWS S3 + EMR or GCP Dataproc)
+- [ ] dbt for data transformation layer
+- [ ] Real-time streaming with Kafka
