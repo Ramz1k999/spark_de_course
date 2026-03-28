@@ -61,5 +61,5 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 
 ## Next steps
 - [x] Delta Lake on Databricks Community Edition
-- [ ] Apache Airflow orchestration
+- [x] Apache Airflow orchestration
 - [ ] Full pipeline on real dataset
