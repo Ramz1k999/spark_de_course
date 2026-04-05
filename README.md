@@ -58,12 +58,19 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Daily schedule (@daily)
 - Docker deployment
 
-### Final Project — Spotify Tracks Pipeline
+### Project 1 — Spotify Tracks Pipeline
 - Dataset: 1.1M Spotify tracks from Kaggle
 - Bronze: raw CSV ingestion with timestamp
 - Silver: deduplication, type casting, null removal, duration in minutes
 - Gold: top 20 artists by popularity, genre stats (danceability/energy/valence), yearly trends
 - Orchestrated with Apache Airflow DAG
+
+### Project 2 — NYC Taxi Pipeline
+- Dataset: 10.9M NYC Yellow Taxi trips (January 2016)
+- Bronze: raw CSV ingestion with timestamp
+- Silver: filtering, trip duration, hour of day, day of week
+- Gold: hourly revenue, weekly distance/tips, top 10 expensive trips
+- Local execution with PySpark on Windows
 
 ## Project Structure
 ```
@@ -78,9 +85,11 @@ spark-de-course/
 │   └── optimization.py
 ├── stage5_lakehouse/
 │   └── lakehouse_pipeline.py
-└── spotify_pipeline/
-    ├── pipeline.py        # PySpark ETL
-    └── dag.py             # Airflow DAG
+├── spotify_pipeline/
+│   ├── pipeline.py
+│   └── dag.py
+└── nyc_taxi_pipeline/
+    └── pipeline.py
 ```
 
 ## How to run
@@ -95,6 +104,11 @@ spark-de-course/
 2. Download dataset from Kaggle: Spotify Tracks Dataset
 3. Run: `python pipeline.py`
 
+### NYC Taxi Pipeline (local)
+1. Install dependencies: `pip install pyspark`
+2. Download dataset from Kaggle: NYC Yellow Taxi Trip Data
+3. Run: `python pipeline.py`
+
 ### Airflow (Docker)
 1. Install Docker Desktop
 2. Run: `docker compose up -d`
@@ -104,12 +118,14 @@ spark-de-course/
 ## Dataset Sources
 - Stage 2: [Online Retail Dataset](https://github.com/databricks/Spark-The-Definitive-Guide)
 - Stages 1, 3, 4, 5: Synthetic data generated in code
-- Final Project: [Spotify Tracks Dataset](https://www.kaggle.com/datasets/amitanshjoshi/spotify-1million-tracks)
+- Project 1: [Spotify Tracks Dataset](https://www.kaggle.com/datasets/amitanshjoshi/spotify-1million-tracks)
+- Project 2: [NYC Yellow Taxi Trip Data](https://www.kaggle.com/datasets/elemento/nyc-yellow-taxi-trip-data)
 
 ## Next steps
 - [x] Delta Lake on Databricks Community Edition
 - [x] Apache Airflow orchestration
-- [x] Full pipeline on real dataset
+- [x] Full pipeline on real dataset (Spotify)
+- [x] Large-scale pipeline (NYC Taxi — 10.9M rows)
 - [ ] Cloud deployment (AWS S3 + EMR or GCP Dataproc)
 - [ ] dbt for data transformation layer
 - [ ] Real-time streaming with Kafka
