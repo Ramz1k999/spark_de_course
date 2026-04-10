@@ -11,6 +11,7 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Apache Airflow 2.9.1
 - Docker
 - Requests (API integration)
+- Custom Data Quality framework (PySpark)
 
 ## Stages
 
@@ -60,6 +61,28 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Docker deployment
 - Task dependencies and error handling
 
+## Data Quality Architecture
+
+All three pipelines implement a custom `run_quality_checks()` function that runs between Bronze and Silver layers. Bad rows are tagged with `_dq_passed = False` and filtered out before Silver writes. Every run saves an audit log to Parquet.
+
+### Check types implemented
+
+| Type | What it catches | PySpark pattern |
+|---|---|---|
+| NOT NULL | Missing required fields | `col(x).isNull()` |
+| RANGE | Values outside valid bounds | `(col(x) < min) \| (col(x) > max)` |
+| UNIQUENESS | Duplicate primary keys | `groupBy + count > 1` |
+| REFERENTIAL | IDs not found in lookup table | `left join + isNull` |
+| BUSINESS LOGIC | Domain rule violations | cross-column conditions with `&` / `\|` |
+| FORMAT | Invalid string patterns | `~col(x).rlike(pattern)` |
+
+### Key design decisions
+
+- `fail_threshold` is a parameter, not hardcoded — 0% for Weather (5 rows, any bad row is critical), 5% for NYC Taxi and Spotify (large datasets)
+- Pipeline stops with `ValueError` if bad row percentage exceeds threshold — Gold layer never receives dirty data
+- Audit log written to Parquet on every run — quality trends are trackable over time
+- `_dq_passed` column tags rows instead of deleting immediately — quarantine layer possible in the future
+
 ## Projects
 
 ### Project 1 — Spotify Tracks Pipeline
@@ -68,6 +91,7 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Silver: deduplication, type casting, null removal, duration in minutes
 - Gold: top 20 artists by popularity, genre stats (danceability/energy/valence), yearly trends
 - Orchestrated with Apache Airflow DAG
+- **Data Quality:** NOT NULL (track_id, artist_name, popularity, genre, year), RANGE (popularity 0–100, duration_ms 30k–3.6M, danceability/energy/valence 0.0–1.0, year 1900–2024), UNIQUENESS (track_id), BUSINESS LOGIC (duration vs popularity ratio). Audit log → `lakehouse/spotify/audit`
 
 ### Project 2 — NYC Taxi Pipeline
 - Dataset: 10.9M NYC Yellow Taxi trips (January 2016)
@@ -75,6 +99,7 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - Silver: filtering, trip duration, hour of day, day of week
 - Gold: hourly revenue, weekly distance/tips, top 10 expensive trips
 - Local execution with PySpark on Windows
+- **Data Quality:** NOT NULL (pickup/dropoff datetime), RANGE (total_amount, trip_distance, passenger_count, fare_amount), BUSINESS LOGIC (negative trip duration, impossible speed >120 mph, tip without card payment), FORMAT (store_and_fwd_flag). Found 64,065 zero-distance trips and 16,515 trips >5 hours in real data. Audit log → `lakehouse/audit/nyc_taxi_dq`
 
 ### Project 3 — Real-time Weather Pipeline
 - **API Source:** OpenWeatherMap API (5 cities: Tashkent, Moscow, London, New York, Tokyo)
@@ -84,6 +109,7 @@ Personal learning project — studying Apache Spark for Data Engineering from sc
 - **Gold:** Temperature comparison (ranking), wind speed analysis, extreme weather filtering
 - **Orchestration:** Apache Airflow DAG running every 10 minutes (`*/10 * * * *`)
 - **Stack:** PySpark + Requests + Airflow
+- **Data Quality:** NOT NULL (city, temp_k, humidity, wind_speed, weather), RANGE (temp_k 180–340K, humidity 0–100, wind_speed 0–113 m/s), FORMAT (city not empty string), BUSINESS LOGIC (temp_k and humidity both zero = empty API response). Threshold: 0% — any bad row stops the pipeline. Audit log → `lakehouse/weather/audit`
 
 ## Project Structure
 ```
@@ -105,7 +131,7 @@ spark-de-course/
 │   └── pipeline.py
 └── weather_pipeline/
     ├── pipeline.py          # Bronze/Silver/Gold layers
-    └── _dag.py       # Airflow DAG (10 min schedule)
+    └── _dag.py              # Airflow DAG (10 min schedule)
 ```
 
 ## How to run
@@ -155,8 +181,9 @@ spark-de-course/
 - [x] Full pipeline on real dataset (Spotify)
 - [x] Large-scale pipeline (NYC Taxi — 10.9M rows)
 - [x] Real-time API ingestion (Weather pipeline)
+- [x] Data quality checks (custom PySpark DQ framework — all 6 check types)
 - [ ] Cloud deployment (AWS S3 + EMR or GCP Dataproc)
 - [ ] dbt for data transformation layer
 - [ ] Real-time streaming with Kafka
-- [ ] Data quality checks (Great Expectations)
-
+- [ ] Unit tests for transformations (pytest)
+- [ ] Idempotency in Airflow DAGs

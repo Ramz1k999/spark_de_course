@@ -1,3 +1,4 @@
+from pandas import DataFrame
 import requests
 import json
 import sys
@@ -36,13 +37,68 @@ def bronze_layer():
     df = df.withColumn("ingested_at", current_timestamp())
     df.write.mode("overwrite").parquet("lakehouse/weather/bronze")
 
+
+def run_quality_checks(df: DataFrame, spark: SparkSession , fail_threshold: float = 0.0) -> DataFrame:
+    total = df.count()
+    logger.info(f"[DQ] Всего строк в Bronze: {total:,}")
+
+    checks = [
+        ("city", (col("city").isNull() | col("city") == "")),
+        ("temp_k", (col("temp_k").isNull())),
+        ("humidity", (col("humidity").isNull())),
+        ("wind_speed", (col("wind_speed").isNull())),
+        ("weather", (col("weather").isNull())),
+        ("temp_k", (col("temp_k") < 180 | col("temp_k") > 340)),
+        ("humidity", (col("humidity") < 0 | col("humidity") > 100)),
+        ("wind_speed", (col("wind_speed") < 0 | col("wind_speed") > 113)),
+        ("empty_response", (col("temp_k") == 0) & (col("humidity") == 0)),  
+    ]
+
+    audit_rows = []
+    failed_mask = lit(False)
+
+    for check_name, bad_condition in checks:
+        bad_count = df.filter(bad_condition).count()
+        pct = bad_count / total * 100
+        status = "FAIL" if pct > fail_threshold * 100 else "WARN" if bad_count > 0 else "OK"
+        
+        logger.info(f"[DQ] {check_name}: {bad_count:,} строк ({pct:.2f}%) — {status}")
+        audit_rows.append((check_name, bad_count, round(pct, 4), status))
+        
+        # Помечаем строку как плохую если нарушает хоть одно правило
+        failed_mask = failed_mask | bad_condition
+
+    # Сохраняем audit log
+    audit_df = spark.createDataFrame(
+        audit_rows,
+        ["check_name", "bad_row_count", "bad_row_pct", "status"]
+    ).withColumn("checked_at", current_timestamp())
+    
+    audit_df.write.mode("overwrite").parquet("lakehouse/weather/audit")
+    logger.info("[DQ] Audit log сохранён в lakehouse/weather/audit")
+
+    # Считаем общий процент плохих строк
+    df = df.withColumn("_dq_passed", ~failed_mask)
+    total_bad = df.filter(~col("_dq_passed")).count()
+    total_bad_pct = total_bad / total
+
+    if total_bad_pct > fail_threshold:
+        raise ValueError(
+            f"[DQ] PIPELINE STOPPED: {total_bad:,} плохих строк ({total_bad_pct*100:.1f}%) "
+            f"превышает порог {fail_threshold*100}%"
+        )
+
+    logger.info(f"[DQ] Проверка пройдена. Плохих строк: {total_bad:,} ({total_bad_pct*100:.1f}%)")
+    return df
+    
+
 def silver_layer():
     df = spark.read.parquet("lakehouse/weather/bronze")
-    df = df.dropna(subset=["temp_k", "humidity", "wind_speed"])
-    df = df.filter(col("temp_k") > 0)
+    
+    df = run_quality_checks(df, spark, fail_threshold=0.0)
+    df = df.filter(col("_dq_passed")).drop("_dq_passed")
+    
     df = df.withColumn("temperature_c", col("temp_k") - 273.15)
-    df = df.filter(col("wind_speed") >= 0)
-
     df.write.mode("overwrite").parquet("lakehouse/weather/silver")
 
 def gold_layer():

@@ -33,3 +33,14 @@ with DAG(
     gold   = PythonOperator(task_id="gold_layer",   python_callable=run_gold)
 
     bronze >> silver >> gold
+
+
+col_name = "tip_amount"
+
+bad_condition = col(col_name).isNull() | col(col_name) < 0
+
+bad_condition = bad_condition | col("tip_amount") > col("fare_amount") * 0.5
+
+bad_count = df.filter(bad_condition).count()
+bad_pct = bad_count / total * 100
+status    = "OK" if bad_count == 0 else "WARN" if bad_pct < 5 else "FAIL"
