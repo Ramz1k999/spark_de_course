@@ -111,27 +111,34 @@ All three pipelines implement a custom `run_quality_checks()` function that runs
 - **Stack:** PySpark + Requests + Airflow
 - **Data Quality:** NOT NULL (city, temp_k, humidity, wind_speed, weather), RANGE (temp_k 180–340K, humidity 0–100, wind_speed 0–113 m/s), FORMAT (city not empty string), BUSINESS LOGIC (temp_k and humidity both zero = empty API response). Threshold: 0% — any bad row stops the pipeline. Audit log → `lakehouse/weather/audit`
 
+### Project 4 — Real-time Weather Kafka Pipeline
+- Real-time data from OpenWeatherMap API (5 cities)
+- Kafka Producer: sends weather data every 60 seconds
+- Kafka Consumer: reads and displays in real-time
+- Spark Streaming: reads from Kafka, enriches, writes to Parquet
+- Stack: Kafka, PySpark Structured Streaming, Docker, Python
+
 ## Project Structure
 ```
 spark-de-course/
 ├── stage1_basics/
-│   └── basics.py
 ├── stage2_etl/
-│   └── retail_etl.py
 ├── stage3_streaming/
-│   └── streaming_orders.py
 ├── stage4_optimization/
-│   └── optimization.py
 ├── stage5_lakehouse/
-│   └── lakehouse_pipeline.py
 ├── spotify_pipeline/
 │   ├── pipeline.py
 │   └── dag.py
 ├── nyc_taxi_pipeline/
 │   └── pipeline.py
-└── weather_pipeline/
-    ├── pipeline.py          # Bronze/Silver/Gold layers
-    └── _dag.py              # Airflow DAG (10 min schedule)
+├── weather_pipeline/
+│   ├── pipeline.py
+│   └── _dag.py
+└── kafka_weather_pipeline/
+    ├── producer.py       # Sends data every 60s
+    ├── consumer.py       # Real-time display
+    ├── spark_streaming.py # Kafka → Parquet
+    └── docker-compose.yml
 ```
 
 ## How to run
@@ -178,12 +185,12 @@ spark-de-course/
 ## Next steps
 - [x] Delta Lake on Databricks Community Edition
 - [x] Apache Airflow orchestration
-- [x] Full pipeline on real dataset (Spotify)
+- [x] Full pipeline on real dataset (Spotify — 1.1M rows)
 - [x] Large-scale pipeline (NYC Taxi — 10.9M rows)
 - [x] Real-time API ingestion (Weather pipeline)
-- [x] Data quality checks (custom PySpark DQ framework — all 6 check types)
+- [x] Data quality checks (custom PySpark DQ framework)
+- [x] Real-time streaming with Kafka
 - [ ] Cloud deployment (AWS S3 + EMR or GCP Dataproc)
 - [ ] dbt for data transformation layer
-- [ ] Real-time streaming with Kafka
 - [ ] Unit tests for transformations (pytest)
 - [ ] Idempotency in Airflow DAGs
